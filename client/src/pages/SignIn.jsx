@@ -1,12 +1,15 @@
 import {Link, useNavigate} from "react-router-dom"
 import { useState } from "react"
+import { signInFailure,signInStart,signInSuccess } from "../redux/User/UserSlice";
+import {  useDispatch, useSelector } from "react-redux";
 
 function SignIn() {
 
   const [formData, setformData] = useState({});
-  const [error, seterror] = useState(null);
-  const [loading, setloading] = useState(false);
+  const {loading , error} = useSelector((state) =>state.user);
+  console.log(loading,error );
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   //const navigate = useNavigate();
   const handleChange =(e)=>{
     setformData({ ...formData,[e.target.id]:e.target.value});
@@ -15,8 +18,7 @@ function SignIn() {
   const handleSubmit = async(e) =>{
     e.preventDefault();
     try{
-      setloading(true);
-      seterror(false);
+      dispatch(signInStart());
       const res = await fetch('/api/auth/signin' ,{
         method:'POST',
         headers:{
@@ -25,16 +27,15 @@ function SignIn() {
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      setloading(false);
       if (data.success === false){
-        seterror(true);
+        dispatch(signInFailure(data));
         return;
       }
+      dispatch(signInSuccess(data));
       navigate('/');
       
     }catch(error){
-       setloading(false);
-       seterror(true);
+       dispatch(signInFailure(error));
     }
   };
 
@@ -44,7 +45,7 @@ function SignIn() {
       <form onSubmit={handleSubmit} className='flex flex-col gap-5 mt-8'>
         <input type="email" placeholder='Email' id='email' className='bg-slate-100 p-4 rounded-xl'onChange={handleChange} />
         <input type="password" placeholder='Password' id='password' className='bg-slate-100 p-4 rounded-xl'onChange={handleChange} />
-        <button disabled={loading} className='bg-slate-700 text-white p-4 rounded-xl uppercase hover:opacity-95 disabled:opacity-70 text-l font-semibold'>{loading ?'Loading...' : 'Sign In'}</button>
+        <button disabled={loading} className='bg-slate-700 text-white p-4 rounded-xl uppercase hover:opacity-95 disabled:opacity-70 text-xl '>{loading ?'Loading...' : 'Sign In'}</button>
       </form>
       <div className='flex gap-3 mt-2'>
         <p> Dont Have an account?</p>
@@ -52,7 +53,7 @@ function SignIn() {
         <span className='text-blue-500' >Sign Up</span>
         </Link>
       </div>
-      <p className="text-red-700 mt-5 text-xl">{error && 'Something went wrong !'}</p>
+      <p className="text-red-700 mt-5 text-xl">{error ? error.message || 'Something went wrong !' : " "}</p>
     </div>
   )
 }
